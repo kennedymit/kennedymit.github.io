@@ -1,2 +1,2 @@
 # kennedymit.github.io
-Big Data Class
+Big Data Class workshop
