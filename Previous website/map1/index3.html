@@ -1,46 +1,20 @@
 <!DOCTYPE html>
-<link href="css/legend2.css" rel="stylesheet" />
-
-<html lang="en">
-
-<h1>2016 General Election - Margin of Victory by County</h1>
-
 <meta charset="utf-8">
-
-
-
-
 <style>
   .states {
     fill: none;
     stroke: #fff;
     stroke-linejoin: round;
   }
-
-
-
-body {
-  font-family: 'Open Sans', sans-serif;
-}
-#main {
-  width: 960px;
-}
-.axis .domain {
-  display: none;
-}
 </style>
-
 <body>
 <div id="map"></div>
-
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="https://d3js.org/d3-array.v1.min.js"></script>
 <script src="https://d3js.org/d3-geo.v1.min.js"></script>
 <script src="https://d3js.org/d3-queue.v3.min.js"></script>
 <script src="https://d3js.org/topojson.v2.min.js"></script>
 <script>
-
-
 // set width and height of graphic
 var width = 960,
     height = 500;
@@ -60,22 +34,22 @@ var svg = d3.select("#map").append("svg")
 
 // set color
 var color = d3.scaleThreshold()
-    .domain([-0.5, -0.25, -0.1, 0.1, 0.25, 0.5])
-    .range(["#2166ac", "#67a9cf", "#d1e5f0", "#fddbc7", "#ef8a62", "#b2182b"]);
+    .domain([0.02, 0.04, 0.06, 0.08, 0.10])
+    .range(["#f2f0f7", "#dadaeb", "#bcbddc", "#9e9ac8", "#756bb1", "#54278f"]);
 
 // queue up the datasets, run 'ready' when loaded
 d3.queue()
-    .defer(d3.json, "data/us.json")
-    .defer(d3.tsv, "data/election2016_county.tsv")
+    .defer(d3.json, "us.json")
+    .defer(d3.tsv, "unemployment.tsv")
     .await(ready);
 
 // create the graphic with this runction
-function ready(error, us, election2016_county) {
+function ready(error, us, unemployment) {
   if (error) throw error;
 
   var rateById = {}; // Create empty object for holding dataset
-  election2016_county.forEach(function(d) {
-    rateById[d.id] = +d.victory_margin; // Create property for each ID, give it value from rate
+  unemployment.forEach(function(d) {
+    rateById[d.id] = +d.rate; // Create property for each ID, give it value from rate
     // important: cast rate to numeric value (+)
   });
   console.log(rateById);
@@ -95,36 +69,5 @@ function ready(error, us, election2016_county) {
       .attr("class", "states")
       .attr("d", path);
 }
-
-
 </script>
-
-<div class='my-legend'>
-<div class='legend-title'>Clinton    - - - - - - -    Trump</div>
-<div class='legend-scale'>
-  <ul class='legend-labels'>
-    <li><span style='background:#2166ac;'></span>>50%</li>
-    <li><span style='background:#67a9cf;'></span>25%</li>
-    <li><span style='background:#d1e5f0;'></span>10%</li>
-    <li><span style='background:#fddbc7;'></span>10%</li>
-    <li><span style='background:#ef8a62;'></span>25%</li>
-    <li><span style='background:#b2182b;'></span>>50%</li>
-  </ul>
-</div>
-<div class='legend-source'>Source: <a href="#https://townhall.com/">Townhall.com</a></div>
-</div>
-
-
-
-</script>
-
-`<div class="column">
- <h1>US State-Level 2016 Presidential Election Results</h1>
- <div class="index">
-   <iframe width="1000" height="600" sandbox="allow-popups allow-scripts allow-forms allow-same-origin" src="barchart.html" marginwidth="0" marginheight="0" frameborder="0" allowfullscreen scrolling="no"></iframe>
-</div>`
-
-
-
 </body>
-</html>
