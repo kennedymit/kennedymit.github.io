@@ -1,131 +1,214 @@
 <!DOCTYPE html>
-<link href="css/legend2.css" rel="stylesheet" />
-
 <html lang="en">
+<head>
+	<title>Mapping with D3</title>
+	<script src="https://d3js.org/d3.v4.min.js" charset="utf-8"></script>
+	<script src="data/election_results_2000_2016.json"></script>
 
-<h1>2016 General Election - Margin of Victory by County</h1>
+	<style>
+	body {
+    position: absolute;
+    font-family: "Proxima Nova", "Montserrat", sans-serif;
+    margin-left: 200px
+	}
+	h1, h2 {
+	    position: relative;
+	    left: 10px;
+	    font-size: 2.5em;
+	    font-weight: 100;
+	}
+	h2 {
+	    top: 30px;
+	    font-size: 1em;
+	}
+	
+	/* ADD CSS FOR #sliderContainer */
+	#sliderContainer {
+	    text-align: center;
+	    position: relative;
+	    top: 600px;
+	}
 
-<meta charset="utf-8">
+	table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100px;
+    background-color: #ffffff;
+    font-size: 13px
+    margin-top: 40px;
+
+	}
+
+	td, th {
+	    border: 0px;
+	    text-align: left;
+	    padding: 8px;
+	}
+	</style>
 
 
+</head>
 
-
-<style>
-  .states {
-    fill: none;
-    stroke: #fff;
-    stroke-linejoin: round;
-  }
-
-
-
-body {
-  font-family: 'Open Sans', sans-serif;
-}
-#main {
-  width: 960px;
-}
-.axis .domain {
-  display: block;
-  margin-top: 8px;
-  margin-left: 45px;
-}
-
-</style>
 
 <body>
-<div id="map"></div>
-
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="https://d3js.org/d3-array.v1.min.js"></script>
-<script src="https://d3js.org/d3-geo.v1.min.js"></script>
-<script src="https://d3js.org/d3-queue.v3.min.js"></script>
-<script src="https://d3js.org/topojson.v2.min.js"></script>
-<script>
-
-
-// set width and height of graphic
-var width = 960,
-    height = 500;
-
-var projection = d3.geoAlbersUsa()
-    .scale(1000)
-    .translate([width / 2, height / 2]);
-
-// d3 geopath for projection
-var path = d3.geoPath()
-    .projection(projection);
-
-// create SVG elements in map HTML element
-var svg = d3.select("#map").append("svg")
-    .attr("width", width)
-    .attr("height", height);
-
-// set color
-var color = d3.scaleThreshold()
-    .domain([-0.5, -0.25, -0.1, 0.1, 0.25, 0.5])
-    .range(["#2166ac", "#67a9cf", "#d1e5f0", "#fddbc7", "#ef8a62", "#b2182b"]);
-
-// queue up the datasets, run 'ready' when loaded
-d3.queue()
-    .defer(d3.json, "data/us.json")
-    .defer(d3.tsv, "data/election2016_county.tsv")
-    .await(ready);
-
-// create the graphic with this runction
-function ready(error, us, election2016_county) {
-  if (error) throw error;
-
-  var rateById = {}; // Create empty object for holding dataset
-  election2016_county.forEach(function(d) {
-    rateById[d.id] = +d.victory_margin; // Create property for each ID, give it value from rate
-    // important: cast rate to numeric value (+)
-  });
-  console.log(rateById);
-  
-  // create and style counties
-  svg.append("g")
-      .attr("class", "counties")
-    .selectAll("path")
-      .data(topojson.feature(us, us.objects.counties).features)
-    .enter().append("path")
-      .attr("d", path)
-      .style("fill", function(d) { return color(rateById[d.id]); });
-
-  // create state outlines
-  svg.append("path")
-      .datum(topojson.mesh(us, us.objects.states, function(a, b) { return a.id !== b.id; }))
-      .attr("class", "states")
-      .attr("d", path);
-}
-
-
-</script>
-
-<div class='my-legend'>
-<div class='legend-title'>Margin of Victory</div>
-<div class='legend-scale'>
-  <ul class='legend-labels'>
-    <li><span style='background:#2166ac;'></span>>50% Clinton</li>
-    <li><span style='background:#67a9cf;'></span>25%</li>
-    <li><span style='background:#d1e5f0;'></span>10%</li>
-    <li><span style='background:#fddbc7;'></span>10%</li>
-    <li><span style='background:#ef8a62;'></span>25%</li>
-    <li><span style='background:#b2182b;'></span>>50% Trump</li>
-  </ul>
+<div>
+	<h1>Election Results from 2000-2016</h1>
+	<h2></h2>
 </div>
-<div class='legend-source'>Source: <a target="_blank" href="https://townhall.com/">Townhall.com</a></div>
+<div>
+	<table align="center", style="position:relative" >
+	  <tr>
+	    <th>Democrat</th>
+	    <th>Republican</th>
+	  </tr>
+	  <tr>
+	    <td bgcolor="#04BDF4"></td>
+	    <td bgcolor="#FE1E39"></td>
+	  </tr>
+	</table>
 </div>
 
+	<div id="sliderContainer">
+    <input id="timeslide" type="range" min="0" max="4" value="0" step="1"/><br>
+    <span id="range">2000</span>
+	</div>
+	<!-- Page elements and content go here. -->
+	<script>
+		// Width and Height of the whole visualization
+		var width = 700;
+		var height = 580;
+
+		var inputValue = null;
+		var month = ["2000","2004","2008", "2012", "2016"];
+
+		// Create SVG
+		var svg = d3.select( "body" )
+		    .append( "svg" )
+		    .attr( "width", width )
+		    .attr( "height", height );
+		// Width and Height of the whole visualization
 
 
-</script>
+		// Set Projection Parameters
+		var albersProjection = d3.geoAlbers()
+		    .scale( 1000 )
+		    .translate( [width/2,height/2] );
 
-`<div class="column">
- <h1>US State-Level 2016 Presidential Election Results</h1>
- <div class="index">
-   <iframe width="1000" height="600" sandbox="allow-popups allow-scripts allow-forms allow-same-origin" src="barchart.html" marginwidth="0" marginheight="0" frameborder="0" allowfullscreen scrolling="no"></iframe>
-</div>`
+		var geoPath = d3.geoPath()
+		    .projection( albersProjection );
+		// Append empty placeholder g element to the SVG
+		// g will contain geometry elements
+	
+
+
+	
+		var states = svg.append( "g" );
+
+		states.selectAll( "path" )
+			.data( election_results_json.features )
+			.enter()
+			.append( "path" )
+			.attr( "fill", initialDate )
+			.attr( "stroke", "#ffffff" )
+			.attr( "d", geoPath )
+			.attr( "class", "incident");
+			
+
+			// when the input range changes update the value 
+		d3.select("#timeslide").on("input", function() {
+		    update(+this.value);
+		});
+
+		// update the fill of each SVG of class "incident" with value
+		// Creating our inputValue variable (from the slider)
+		function update(value) {
+		    document.getElementById("range").innerHTML=month[value];
+		    inputValue = month[value];
+		    d3.selectAll(".incident")
+		        .attr("fill", dateMatch);
+		}
+
+
+
+/*		function initialDate(d,i){
+    		var d = new Date(d.properties.elect2000);
+    		var m = month[d.getMonth()];
+    		console.log(d);
+			console.log(i);
+    		if (m == "2000") {
+        		this.parentElement.appendChild(this);
+        		return "red";
+    		} else {
+        		return "#999";
+    		};
+		}*/
+
+		// getting whats in the dataset, and checking it
+		// set match value
+		function dateMatch(data, value) {
+			console.log(data);
+			console.log(inputValue);
+		    if (inputValue == 2000) {
+		        if (data.properties.elect2000 == "R") {
+					return "#FE1E39";
+				}else if (data.properties.elect2000 == "D") {
+					return "#04BDF4";
+		        	
+		        }
+		        
+		    } else if (inputValue == 2004) {
+		        if (data.properties.elect2004 == "R") {
+					return "#FE1E39";
+				}else if (data.properties.elect2004 == "D") {
+					return "#04BDF4";
+		        }
+		        
+		    } else if (inputValue == 2008) {
+		        if (data.properties.elect2008 == "R") {
+					return "#FE1E39";
+				}else if (data.properties.elect2008 == "D") {
+					return "#04BDF4";
+		        }
+
+		    } else if (inputValue == 2012) {
+		        if (data.properties.elect2012 == "R") {
+					return "#FE1E39";
+				}else if (data.properties.elect2012 == "D") {
+					return "#04BDF4";
+		        }
+
+		    } else if (inputValue == 2016) {
+		        if (data.properties.elect2016 == "R") {
+					return "#FE1E39";
+				}else if (data.properties.elect2016 == "D") {
+					return "#04BDF4";
+		        }
+		            
+		    } else {
+		        return "#000099";
+		    };
+
+
+		}
+
+
+
+		function initialDate(data, value) {
+			if (data.properties.elect2000 == "R") {
+				this.parentElement.appendChild(this);
+			return "#FE1E39";
+			}else if (data.properties.elect2000 == "D") {
+			return "#04BDF4";
+		    };
+		}
+
+
+	</script>	
+
+
+	<h4>Map created by Lauren Kennedy</h4>
+	<p><a href="https://www.archives.gov/federal-register/electoral-college/historical.html">Data from: National Archives and Records Administration</a></p>
+
 
 
 
